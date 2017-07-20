@@ -1,0 +1,67 @@
+version: '2'
+services:
+  nsqlookupd:
+    image: index.alauda.cn/alaudaorg/nsq
+    command: /nsqlookupd
+    ports:
+      - "4160"
+      - "4161"
+  nsqd:
+    image: index.alauda.cn/alaudaorg/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    ports:
+      - "4150"
+      - "4151"
+  nsqd2:
+    image: index.alauda.cn/alaudaorg/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    ports:
+      - "4150"
+      - "4151"
+  nsqadmin:
+    image: index.alauda.cn/alaudaorg/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    ports:
+      - "8080:4171"
+
+  consumer1:
+    image: nsq-client
+    build: ./
+    environment:
+       LOOKUP: nsqlookupd:4161
+       TOPIC: names
+       CHANNEL: register
+    links:
+      - nsqlookupd
+    command: nsq-client consume
+
+  consumer2:
+    image: nsq-client
+    build: ./
+    environment:
+       LOOKUP: nsqlookupd:4161
+       TOPIC: names
+       CHANNEL: email
+    links:
+      - nsqlookupd
+    command: nsq-client consume
+
+  producer1:
+    image: nsq-client
+    build: ./
+    environment:
+       NSQ: nsqd:4150
+       TOPIC: names
+    links:
+      - nsqd
+    command: nsq-client produce
+
+  producer2:
+    image: nsq-client
+    build: ./
+    environment:
+       NSQ: nsqd2:4150
+       TOPIC: names
+    links:
+      - nsqd2
+    command: nsq-client produce

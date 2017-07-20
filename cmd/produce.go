@@ -40,9 +40,9 @@ to quickly create a Cobra application.`,
 		// TODO: Work your own magic here
 		fmt.Println("produce called", viper.GetString("NSQ"), viper.GetString("TOPIC"))
 
-		// produce(viper.GetString("NSQ"), viper.GetString("TOPIC"))
+		produce4Ever(viper.GetString("NSQ"), viper.GetString("TOPIC"))
 
-		produce(viper.GetString("TOPIC"), viper.GetString("NSQ"), viper.GetString("NSQ2"))
+		// produce(viper.GetString("TOPIC"), viper.GetString("NSQ"), viper.GetString("NSQ2"))
 	},
 }
 
@@ -78,5 +78,18 @@ func produce(topic string, nsqs ...string) {
 	}
 	for {
 		time.Sleep(time.Minute)
+	}
+}
+
+func produce4Ever(nsqd, topic string) {
+
+	config := nsq.NewConfig()
+	w, _ := nsq.NewProducer(nsqd, config)
+
+	for {
+		err := w.Publish(topic, []byte(randomdata.Adjective()+randomdata.FirstName(randomdata.Male)))
+		if err != nil {
+			log.Panic("Could not connect")
+		}
 	}
 }

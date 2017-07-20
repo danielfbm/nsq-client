@@ -78,6 +78,7 @@ func initConfig() {
 	viper.SetDefault("NSQ2", "nsqd2")
 
 	viper.SetDefault("TOPIC", "my-topic")
+	viper.SetDefault("CHANNEL", "my-topic")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

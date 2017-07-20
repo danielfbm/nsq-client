@@ -39,8 +39,8 @@ to quickly create a Cobra application.`,
 		// TODO: Work your own magic here
 		fmt.Println("consume called", viper.GetString("TOPIC"), viper.GetString("NSQ"), viper.GetString("NSQ2"))
 
-		// consume(viper.GetString("LOOKUP"), viper.GetString("TOPIC"))
-		consumeDirect(viper.GetString("TOPIC"), viper.GetString("NSQ"), viper.GetString("NSQ2"))
+		consume4Ever(viper.GetString("LOOKUP"), viper.GetString("TOPIC"), viper.GetString("CHANNEL"))
+		// consumeDirect(viper.GetString("TOPIC"), viper.GetString("NSQ"), viper.GetString("NSQ2"))
 	},
 }
 
@@ -59,12 +59,12 @@ func init() {
 
 }
 
-func consume(lookupHost, topic string) {
+func consume(lookupHost, topic, channel string) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
 	config := nsq.NewConfig()
-	q, _ := nsq.NewConsumer(topic, "ch", config)
+	q, _ := nsq.NewConsumer(topic, channel, config)
 	q.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
 		log.Printf("Got a message: %v", message)
 		wg.Done()
@@ -79,11 +79,31 @@ func consume(lookupHost, topic string) {
 	wg.Wait()
 }
 
-func consumeDirect(topic string, nsqs ...string) {
+func consume4Ever(lookupHost, topic, channel string) {
+
+	config := nsq.NewConfig()
+	q, _ := nsq.NewConsumer(topic, channel, config)
+	q.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
+		log.Printf("Got a message: %s", message.Body)
+		message.Finish()
+		return nil
+	}))
+
+	err := q.ConnectToNSQLookupd(lookupHost)
+	if err != nil {
+		log.Panic("Could not connect")
+	}
+	for {
+		time.Sleep(time.Minute)
+	}
+
+}
+
+func consumeDirect(topic, channel string, nsqs ...string) {
 	for i, nsqH := range nsqs {
 		go func(index int, nsqHost string) {
 			config := nsq.NewConfig()
-			q, _ := nsq.NewConsumer(topic, "ch", config)
+			q, _ := nsq.NewConsumer(topic, channel, config)
 			q.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
 				log.Printf("Got a message: %s", message.Body)
 				return nil
